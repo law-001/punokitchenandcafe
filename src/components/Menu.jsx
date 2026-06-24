@@ -56,7 +56,10 @@ export default function Menu() {
 
   const collapse = () => {
     setShowAll(false)
-    scrollToCat(menu[0].id)
+    // Wait for React to commit the shorter DOM before scrolling, otherwise the
+    // browser smooth-scrolls against a layout that's about to disappear and on
+    // mobile that lands the viewport way above the menu.
+    requestAnimationFrame(() => scrollToCat(menu[0].id))
   }
 
   return (
@@ -196,32 +199,36 @@ export default function Menu() {
             )
           })}
 
-          {/* Expand / collapse control */}
+          {/* Expand / collapse control — a single persistent <button> so tapping
+              it on mobile doesn't unmount the focused element. Replacing the
+              focused node (via a ternary that swaps elements) made iOS yank the
+              viewport up toward the hero. */}
           <div className="flex flex-col items-center gap-4 border-t border-forest/15 pt-12">
-            {!showAll ? (
-              <>
-                <p className="font-sans text-sm text-ink/55">
-                  Showing a taste — {hiddenCount} more sections on the full menu.
-                </p>
-                <button
-                  onClick={() => setShowAll(true)}
-                  className="group inline-flex items-center gap-3 rounded-full bg-forest px-9 py-4 font-sans text-sm font-bold uppercase tracking-[0.16em] text-cream transition-transform duration-300 ease-out hover:scale-[1.03] active:scale-[0.98]"
-                >
-                  View the full menu
-                  <span className="transition-transform duration-300 ease-out group-hover:translate-y-0.5">
-                    &darr;
-                  </span>
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={collapse}
-                className="inline-flex items-center gap-3 rounded-full border border-forest/30 px-8 py-3.5 font-sans text-sm font-bold uppercase tracking-[0.16em] text-forest transition-colors duration-300 hover:bg-forest/5 active:scale-[0.98]"
-              >
-                Show less
-                <span>&uarr;</span>
-              </button>
+            {!showAll && (
+              <p className="font-sans text-sm text-ink/55">
+                Showing a taste — {hiddenCount} more sections on the full menu.
+              </p>
             )}
+            <button
+              onClick={showAll ? collapse : () => setShowAll(true)}
+              aria-expanded={showAll}
+              className={
+                showAll
+                  ? 'inline-flex items-center gap-3 rounded-full border border-forest/30 px-8 py-3.5 font-sans text-sm font-bold uppercase tracking-[0.16em] text-forest transition-colors duration-300 hover:bg-forest/5 active:scale-[0.98]'
+                  : 'group inline-flex items-center gap-3 rounded-full bg-forest px-9 py-4 font-sans text-sm font-bold uppercase tracking-[0.16em] text-cream transition-transform duration-300 ease-out hover:scale-[1.03] active:scale-[0.98]'
+              }
+            >
+              {showAll ? 'Show less' : 'View the full menu'}
+              <span
+                className={
+                  showAll
+                    ? ''
+                    : 'transition-transform duration-300 ease-out group-hover:translate-y-0.5'
+                }
+              >
+                {showAll ? <>&uarr;</> : <>&darr;</>}
+              </span>
+            </button>
           </div>
 
           {/* Family set callout (mobile) */}
